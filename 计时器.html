@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计数按钮（35分钟冷却/28次重置）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            gap: 30px;
+        }
+        .count-show {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+        }
+        /* 新增：按钮容器，实现两个按钮并排 */
+        .btn-group {
+            display: flex;
+            align-items: center;
+            gap: 12px; /* 两个按钮之间的间距 */
+        }
+        .count-btn {
+            padding: 16px 48px;
+            font-size: 20px;
+            background-color: #42b983;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .count-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        /* 新增：重新开始按钮样式（文字小、样式适配） */
+        .reset-btn {
+            padding: 8px 16px;
+            font-size: 12px; /* 小文字核心设置 */
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .reset-btn:hover {
+            background-color: #e5e5e5;
+            border-color: #ccc;
+        }
+        .cool-tip {
+            font-size: 16px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 计数显示区域 -->
+        <div class="count-show">当前计数：0</div>
+        <!-- 新增：按钮容器，包裹计数按钮和重新开始按钮（实现并排） -->
+        <div class="btn-group">
+            <!-- 原计数按钮 -->
+            <button class="count-btn" id="countBtn">点击计数+1</button>
+            <!-- 新增：重新开始计时按钮（小文字） -->
+            <button class="reset-btn" id="resetBtn">重新开始</button>
+        </div>
+        <!-- 冷却倒计时提示 -->
+        <div class="cool-tip" id="coolTip"></div>
+    </div>
+
+    <script>
+        // 1. 获取DOM元素（新增：resetBtn 重新开始按钮）
+        const countBtn = document.getElementById('countBtn');
+        const resetBtn = document.getElementById('resetBtn'); // 新增
+        const countShow = document.querySelector('.count-show');
+        const coolTip = document.getElementById('coolTip');
+        
+        // 2. 定义核心变量
+        let currentCount = 0; // 当前计数，初始为0
+        const coolDownTime = 35 * 60 * 1000; // 冷却时间：35分钟 → 毫秒
+        let timer = null; // 倒计时定时器
+
+        // 3. 原计数按钮点击事件（无修改）
+        countBtn.addEventListener('click', function() {
+            currentCount++;
+            countShow.textContent = `当前计数：${currentCount}`;
+            startCoolDown();
+            // 28次提醒+重置
+            if (currentCount === 28) {
+                alert('恭喜！计数已达到28次，即将重新开始计算～');
+                currentCount = 0;
+                countShow.textContent = `当前计数：${currentCount}`;
+            }
+        });
+
+        // 新增：4. 重新开始按钮点击事件（一键重置所有状态）
+        resetBtn.addEventListener('click', function() {
+            resetAllState(); // 调用重置核心函数
+        });
+
+        // 新增：5. 重置所有状态核心函数（一键恢复初始）
+        function resetAllState() {
+            currentCount = 0; // 计数归0
+            countShow.textContent = `当前计数：${currentCount}`; // 更新计数显示
+            if (timer) clearInterval(timer); // 清除冷却倒计时定时器
+            countBtn.disabled = false; // 立即启用计数按钮（结束冷却）
+            coolTip.textContent = ''; // 清空冷却提示文字
+            timer = null; // 重置定时器变量
+        }
+
+        // 6. 原冷却核心函数（无修改）
+        function startCoolDown() {
+            countBtn.disabled = true;
+            let remainingTime = coolDownTime;
+            timer = setInterval(function() {
+                remainingTime -= 1000;
+                const minutes = Math.floor(remainingTime / 60000);
+                const seconds = Math.floor((remainingTime % 60000) / 1000);
+                const formatMin = minutes.toString().padStart(2, '0');
+                const formatSec = seconds.toString().padStart(2, '0');
+                coolTip.textContent = `按钮冷却中，还剩 ${formatMin} 分 ${formatSec} 秒可再次点击`;
+                if (remainingTime <= 0) {
+                    clearInterval(timer);
+                    countBtn.disabled = false;
+                    coolTip.textContent = '';
+                }
+            }, 1000);
+        }
+
+        // 页面卸载时清除定时器（避免内存泄漏）
+        window.addEventListener('unload', function() {
+            if (timer) clearInterval(timer);
+        });
+    </script>
+</body>
